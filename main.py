@@ -18,9 +18,10 @@ def delivery(the_truck, start_time, user_time, h_table, the_list, the_dict):
 	truck_index = 0
 	package_obj = None
 	current_time = start_time
-	delivered_packages = []
+	delivered_count = 0
+	visited = [False] * len(the_truck)
 
-	while len(the_truck) > 0:
+	while delivered_count < len(the_truck):
 
 		current_index = the_dict[current_address]
 		dest_address = ""
@@ -29,33 +30,39 @@ def delivery(the_truck, start_time, user_time, h_table, the_list, the_dict):
 		# find the address closest to current address
 		for item in range(len(the_truck)):
 
-			# find address
-			temp_package_obj = h_table.lookup(the_truck[item])
+			if not visited[item]:
+				# find address
+				temp_package_obj = h_table.lookup(the_truck[item])
 
-			if temp_package_obj.get_id() == 9 and user_time >= datetime.timedelta(hours=10, minutes=20):
-				temp_package_obj.set_address("410 S State St")
-				temp_package_obj.set_city("Salt Lake City")
-				temp_package_obj.set_zip_code("84111")
+				temp_dest_address = temp_package_obj.get_address()
 
-			# temp_package_obj.set_loading_time(start_time)
+				if temp_package_obj.get_id() == 9 and user_time >= datetime.timedelta(hours=10, minutes=20):
+					temp_dest_address = "410 S State St"
 
-			temp_dest_address = temp_package_obj.get_address()
+				# get index of address from dictionary
+				dest_index = the_dict[temp_dest_address]
 
-			# get index of address from dictionary
-			dest_index = the_dict[temp_dest_address]
+				if current_index >= dest_index:
+					distance = float(the_list[current_index][dest_index])
+				else:
+					distance = float(the_list[dest_index][current_index])
 
-			if current_index >= dest_index:
-				distance = float(the_list[current_index][dest_index])
-			else:
-				distance = float(the_list[dest_index][current_index])
+				# Find the closest address based on the current minimum distance
+				if distance < min_distance:
+					min_distance = distance
+					truck_index = item
 
-			# Find the closest address based on the current minimum distance
-			if distance < min_distance:
-				min_distance = distance
-				package_obj = temp_package_obj
-				truck_index = item
-				dest_address = temp_dest_address
+		visited[truck_index] = True
+		delivered_count += 1
 
+		package_obj = h_table.lookup(the_truck[truck_index])
+
+		if package_obj.get_id() == 9 and user_time >= datetime.timedelta(hours=10, minutes=20):
+			package_obj.set_address("410 S State St")
+			package_obj.set_city("Salt Lake City")
+			package_obj.set_zip_code("84111")
+
+		dest_address = package_obj.get_address()
 		package_obj.set_loading_time(start_time)
 
 		print(f"current_address: {current_address}, destination: {dest_address}, min_distance = {min_distance}")
@@ -82,17 +89,17 @@ def delivery(the_truck, start_time, user_time, h_table, the_list, the_dict):
 
 		current_time = delivery_time
 
-		# Remove package from the truck
-
-		the_truck.pop(truck_index)
 
 	return truck_route_distance
 	
 def main():
+	
+	# Display total mileage of route
+	# Prompt user to enter a time
+	# Prompt user for choice to check the status of an individual package or all packages
+	# Set package status based on the user's input
 
-	input_time_str = input("Enter time in 24-hr format (HH:MM:SS)  ")
-	input_time = str_to_time(input_time_str)
-
+	end_of_day = datetime.timedelta(hours=17, minutes=0, seconds=0)
 	hash_table = HashTable()
 	distance_dict = {}
 	distance_list = []
@@ -117,7 +124,7 @@ def main():
 		package.set_weight(package_info[6])
 		package.set_loading_time(load_time_01)
 		package.set_delivery_time(load_time_01)
-		package.set_delivery_status(input_time)
+		package.set_delivery_status(end_of_day)
 		hash_table.insert(package.get_id(), package)
 
 	# Get distance data from file
@@ -156,22 +163,20 @@ def main():
 	total_route_mileage = 0.0
 
 	print("Truck 1 route")
-	total_route_mileage += delivery(truck_01, load_time_01, input_time, hash_table, distance_list, distance_dict)
+	total_route_mileage += delivery(truck_01, load_time_01, end_of_day, hash_table, distance_list, distance_dict)
 
 	print("Truck 2 route")
-	total_route_mileage += delivery(truck_02, load_time_02, input_time, hash_table, distance_list, distance_dict)
+	total_route_mileage += delivery(truck_02, load_time_02, end_of_day, hash_table, distance_list, distance_dict)
 
 	print("Truck 3 route")
-	total_route_mileage += delivery(truck_03, load_time_03, input_time, hash_table, distance_list, distance_dict)
+	total_route_mileage += delivery(truck_03, load_time_03, end_of_day, hash_table, distance_list, distance_dict)
 
 	print(total_route_mileage)
 
 	print(hash_table)
 
+	# input_time_str = input("Enter time in 24-hr format (HH:MM:SS)  ")
+	# input_time = str_to_time(input_time_str)
+
 if __name__ == '__main__':
-	# Display total mileage of route
-	# Prompt user to enter a time
-	# Prompt user for choice to check the status of an individual package or all packages
-
 	main()
-
